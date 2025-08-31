@@ -12,6 +12,7 @@ CRtrig::CRtrig(long long i, oc t, size_t l)
     index = i;
 }
 
+
 std::unique_ptr<CRobj> CRtrig::copy() const
 {
     auto result = std::make_unique<CRtrig>(index, trigtype, length);
