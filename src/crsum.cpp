@@ -89,6 +89,7 @@ std::unique_ptr<CRobj> CRsum::add(const CRobj &target) const
     }
 }
 
+// TODO: CONSULT JAVA MCR FOR INDEX BLOCK
 std::unique_ptr<CRobj> CRsum::mul(const CRobj &target) const
 {
 
@@ -112,47 +113,109 @@ std::unique_ptr<CRobj> CRsum::mul(const CRobj &target) const
         return result;
     }
     else if (auto p = dynamic_cast<const CRsum *>(&target))
-    {
-
-        if (length >= target.length)
-        {
+    {  
+        //std::cout<<"called here 0"<<"\n";
+        
+        std::unique_ptr<CRobj> r1 = std::make_unique<CRnum>(0);   
+        if (length >= target.length){
             size_t newlength = length + target.length - 1;
+
             auto result = std::make_unique<CRsum>(index, newlength);
-            double rtemp2, r1;
+            std::unique_ptr<CRobj> rtemp2 = std::make_unique<CRnum>(0);
+            std::unique_ptr<CRobj> r1 = std::make_unique<CRnum>(0);
+            std::unique_ptr<CRobj> r2 = std::make_unique<CRnum>(0); 
+            std::unique_ptr<CRobj> rtemp1, rtemp11;
             size_t n = length - 1;
             size_t m = target.length - 1;
-            for (size_t i = 0; i < newlength; i++)
-            {
-                double r1 = 0;
+            for (size_t i = 0; i < newlength; i++){ 
+                //std::cout<<"called here 1"<<"\n";
+                r1 = std::make_unique<CRnum>(0);
                 size_t ibound11 = (i > m ? i - m : 0);
                 size_t ibound12 = std::min(i, n);
-                for (size_t j = ibound11; j < ibound12 + 1; j++)
-                {
-                    double r2 = 0;
+                for (size_t j = ibound11; j < ibound12 + 1; j++){
+                    //std::cout<<"called here 2"<<"\n";
+                    r2 = std::make_unique<CRnum>(0);
                     size_t ibound21 = (i > j ? i - j : 0);
                     size_t ibound22 = std::min(i, m);
-                    for (size_t k = ibound21; k < ibound22 + 1; k++)
-                    {
-                        double rtemp1 = choose(j, i - k);
-                        double rtemp11 = target.operands[k]->valueof();
-                        rtemp1 *= rtemp11;
-                        r2 += rtemp1;
+                    for (size_t k = ibound21; k < ibound22 + 1; k++){
+                        //std::cout<<"called here 3"<<"\n";
+                        rtemp1 = std::make_unique<CRnum>(choose(j, i - k));
+                        rtemp11 = target.operands[k]->copy();
+                        //std::cout<<"called here 3.5"<<"\n";
+                        rtemp1 = rtemp11->mul(*rtemp1);
+                        //std::cout<<"0"<<"\n";
+                        if (rtemp1->index > r2->index){
+                            r2 = rtemp1->add(*r2); 
+                        } else { 
+                            r2 = r2->add(*rtemp1);
+                        }
                     }
-                    double rtemp2 = choose(i, j);
-                    r2 *= rtemp2;
-                    r2 *= this->operands[j]->valueof();
-                    r1 += r2;
+                    rtemp2 = std::make_unique<CRnum>(choose(i, j));
+                    r2 = r2->mul(*rtemp2);
+                    if (r2->index > operands[j]->index){
+                        //std::cout<<"1"<<"\n";
+                        rtemp2 = r2->mul(*operands[j]);
+                    } else {
+                        //std::cout<<"2"<<"\n";
+                        rtemp2 = operands[j]->mul(*r2);
+                        
+                    }
+                    if (r1->index > rtemp2->index){
+                        //std::cout<<"3"<<"\n";
+                        r1 = r1->add(*rtemp2);
+                        
+                    } else {
+                        //std::cout<<"4"<<"\n";
+                        r1 = rtemp2->add(*r1);
+                    }
+                    result->operands[i] = r1->copy();
+                    
                 }
-                result->operands[i] = std::make_unique<CRnum>(r1);
             }
             result->length = newlength;
             result->simplify();
             return result;
-        }
-        else
+        }   else
         {
             return target.mul(*this);
         }
+        // if (length >= target.length)
+        // {
+        //     size_t newlength = length + target.length - 1;
+        //     auto result = std::make_unique<CRsum>(index, newlength);
+        //     double rtemp2, r1;
+        //     size_t n = length - 1;
+        //     size_t m = target.length - 1;
+        //     for (size_t i = 0; i < newlength; i++)
+        //     {
+        //         double r1 = 0;
+        //         size_t ibound11 = (i > m ? i - m : 0);
+        //         size_t ibound12 = std::min(i, n);
+        //         for (size_t j = ibound11; j < ibound12 + 1; j++)
+        //         {
+        //             double r2 = 0;
+        //             size_t ibound21 = (i > j ? i - j : 0);
+        //             size_t ibound22 = std::min(i, m);
+        //             for (size_t k = ibound21; k < ibound22 + 1; k++)
+        //             {
+        //                 double rtemp1 = choose(j, i - k);
+        //                 // FIX HERE:
+        //                 std::unique_ptr<CRobj> rtemp11 = target.operands[k]->copy();
+        //                 rtemp1 *= rtemp11;
+        //                 r2 += rtemp1;
+        //             }
+        //             double rtemp2 = choose(i, j);
+        //             r2 *= rtemp2;
+        //             r2 *= this->operands[j]->valueof();
+        //             r1 += r2;
+        //         }
+        //         result->operands[i] = std::make_unique<CRnum>(r1);
+        //     }
+        //     result->length = newlength;
+        //     result->simplify();
+        //     return result;
+        // }
+        
     }
     else
     {
@@ -245,6 +308,8 @@ std::unique_ptr<CRobj> CRsum::cos() const
 
 void CRsum::simplify()
 {
+    return;
+
     if (operands.empty())
     {
         return;
